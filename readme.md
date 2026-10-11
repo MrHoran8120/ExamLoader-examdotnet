@@ -1,10 +1,39 @@
 # ExamLoader for Exam.net
 
-ExamLoader loads exam questions from a JSON file into [Exam.net](https://exam.net), using Playwright and a
-Chrome (or Microsoft Edge) CDP (remote debugging) connection. It is part of the ExamLoader family of tools for teachers
-(see also ExamLoader for Gradeo).
+ExamLoader saves teachers from typing exam questions into [Exam.net](https://exam.net) one at a time. Write or
+generate your questions as a JSON file (for example with ChatGPT), log in to Exam.net, and ExamLoader creates them
+in your exam for you: multiple choice, list match, fill the gaps, long answer and Python program questions.
+It is part of the ExamLoader family of tools for teachers (see also ExamLoader for Gradeo).
 
 > ExamLoader is an independent tool and is not affiliated with, or endorsed by, Exam.net.
+
+## For teachers: download and install (Windows)
+
+1. Download `ExamLoader-examdotnet-setup-<version>.exe` from the
+   [latest release](https://github.com/MrHoran8120/ExamLoader-examdotnet/releases/latest).
+2. Run it. Windows may say **"Windows protected your PC"** because ExamLoader is a free tool without a paid
+   publisher certificate. Click **More info**, then **Run anyway**.
+3. ExamLoader installs for your Windows account only (no administrator password needed) and adds a Start menu
+   shortcut.
+
+You need **Google Chrome** or **Microsoft Edge**. Install ExamLoader on your own computer; school-managed computers
+may block it.
+
+### Using it
+
+1. Start **ExamLoader for Exam.net**. A browser window opens on Exam.net: log in and open the exam you want to add
+   questions to. (This is a separate browser window from your usual one, so you only need to log in the first time.)
+2. In ExamLoader, choose your questions file (**Browse...**) or copy the JSON from ChatGPT and click
+   **Paste from clipboard**. Click **Copy JSON schema** to get an example to give ChatGPT.
+3. Click **Validate** to check the questions, then **Start**. Watch the log; click
+   **Stop after current question** if you need to stop.
+
+Try it on a practice exam first. ExamLoader tells you when a newer version is available: Exam.net occasionally
+changes its pages, and updates fix that. Something not working? [Report a problem](https://github.com/MrHoran8120/ExamLoader-examdotnet/issues/new/choose).
+
+---
+
+*The rest of this readme is for developers: running from source, the JSON format, building and releasing.*
 
 ## Overview
 
@@ -282,7 +311,7 @@ To add a new `question_type`:
 ## Tests
 
 ```bash
-python -m unittest test_cli test_automator test_browser
+python -m unittest test_cli test_automator test_browser test_updates
 ```
 
 ## Building the Windows app
@@ -295,6 +324,12 @@ This installs the build tools from `requirements-build.txt` into `.venv`, runs t
 `dist\ExamLoader\ExamLoader.exe` with PyInstaller (`packaging\ExamLoader.spec`). The build bundles Playwright's
 driver but no browsers. Test the exe from a different folder before releasing it.
 
+`.\build.ps1 -Installer` also builds the per-user installer `dist\ExamLoader-examdotnet-setup-<version>.exe` from
+`packaging\ExamLoader.iss`. This needs [Inno Setup 6](https://jrsoftware.org/isinfo.php)
+(`winget install JRSoftware.InnoSetup`). Never change the `AppId` in the script: Windows uses it to recognise upgrades.
+
+The app checks GitHub's latest (non-pre-release) release when it starts and offers the download page if it is newer.
+
 ## Releasing
 
 The version lives in one place: `__version__` in `examnet/__init__.py`. The window title, About window, log files,
@@ -304,7 +339,7 @@ version number means.
 1. Fix or add the feature, then do a full live run against Exam.net (use "DUMMY ... delete me" questions).
 2. Update `examnet/__init__.py`: bump `__version__`, and set `LAST_VERIFIED` to the date of that live run.
 3. Add a `CHANGELOG.md` entry written for teachers ("Fixes list-match questions after Exam.net's October update").
-4. Run `.\build.ps1` and test `dist\ExamLoader\ExamLoader.exe`.
+4. Run `.\build.ps1 -Installer`, then install `dist\ExamLoader-examdotnet-setup-<version>.exe` and test it.
 5. Commit, tag and push: `git tag v1.0.1` then `git push --follow-tags`.
 6. Publish a GitHub Release for the tag with the installer attached and the changelog entry as its notes.
 

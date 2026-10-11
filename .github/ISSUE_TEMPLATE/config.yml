@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Download the latest version
+    url: https://github.com/MrHoran8120/ExamLoader-examdotnet/releases/latest
+    about: Many problems after an Exam.net update are fixed in a newer version.

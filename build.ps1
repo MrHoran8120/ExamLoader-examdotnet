@@ -1,8 +1,24 @@
 # Builds dist\ExamLoader\ExamLoader.exe (one-folder, windowed) with PyInstaller.
 # Usage: .\build.ps1            (add -SkipTests to skip the unit tests)
+#        .\build.ps1 -Installer (also builds dist\ExamLoader-examdotnet-setup-<version>.exe; needs Inno Setup 6)
 param(
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [switch]$Installer
 )
+
+function Find-InnoCompiler {
+    $cmd = Get-Command iscc -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+        (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe")
+    )
+    foreach ($path in $candidates) {
+        if ($path -and (Test-Path $path)) { return $path }
+    }
+    throw "Inno Setup 6 was not found. Install it (winget install JRSoftware.InnoSetup) and re-run."
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -23,7 +39,7 @@ if ($LASTEXITCODE -ne 0) { throw "Failed to install build dependencies." }
 
 if (-not $SkipTests) {
     Write-Host "Running unit tests ..."
-    & $VenvPython -m unittest test_cli test_automator test_browser
+    & $VenvPython -m unittest test_cli test_automator test_browser test_updates
     if ($LASTEXITCODE -ne 0) { throw "Unit tests failed; build stopped." }
 }
 
@@ -36,3 +52,12 @@ if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed." }
 $OutDir = Join-Path $ProjectRoot "dist\ExamLoader"
 $SizeMB = (Get-ChildItem $OutDir -Recurse -File | Measure-Object Length -Sum).Sum / 1MB
 Write-Host ("Built {0} ({1:N0} MB)" -f (Join-Path $OutDir "ExamLoader.exe"), $SizeMB)
+
+if ($Installer) {
+    $Iscc = Find-InnoCompiler
+    Write-Host "Building installer with $Iscc ..."
+    & $Iscc /Q "/DAppVersion=$Version" packaging\ExamLoader.iss
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup build failed." }
+    $SetupExe = Join-Path $ProjectRoot "dist\ExamLoader-examdotnet-setup-$Version.exe"
+    Write-Host ("Built {0} ({1:N0} MB)" -f $SetupExe, ((Get-Item $SetupExe).Length / 1MB))
+}

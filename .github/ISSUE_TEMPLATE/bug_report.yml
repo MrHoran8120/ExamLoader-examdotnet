@@ -1,0 +1,53 @@
+name: Something isn't working
+description: A question wasn't created correctly, the app showed an error, or it stopped working.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please **don't include student names or other personal information**, and
+        remove anything private from your log file before attaching it.
+
+        Exam.net sometimes changes its pages, which can stop ExamLoader working. First check that you have the
+        [latest version](https://github.com/MrHoran8120/ExamLoader-examdotnet/releases/latest).
+  - type: input
+    id: version
+    attributes:
+      label: ExamLoader version
+      description: Shown in the window title and in the About window, e.g. 1.0.0.
+    validations:
+      required: true
+  - type: dropdown
+    id: question_type
+    attributes:
+      label: Which question type was affected?
+      multiple: true
+      options:
+        - Multiple choice
+        - List match
+        - Fill the gaps
+        - Long answer
+        - Python program
+        - Not specific to one question type
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead? Include any error message shown.
+    validations:
+      required: true
+  - type: textarea
+    id: question_json
+    attributes:
+      label: The question that failed (optional)
+      description: Paste the JSON for the question that failed, if you can share it.
+      render: json
+  - type: textarea
+    id: log
+    attributes:
+      label: Log file
+      description: |
+        Click "Open logs folder" in ExamLoader and drag the newest log file here.
+        Its first line shows the version, which helps a lot.

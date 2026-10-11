@@ -13,6 +13,7 @@ from . import APP_NAME, DOWNLOAD_URL, LAST_VERIFIED, __version__
 from .browser import EXAM_NET_URL, BrowserNotFoundError, is_cdp_available, launch_browser
 from .cli import build_question_schema_text, configure_logging
 from .paths import data_file, documents_dir, logs_dir
+from .updates import check_for_update
 from .json_precheck import _extract_json_payload, _strip_jsonc_comments, run_json_precheck
 
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR"]
@@ -89,6 +90,7 @@ class ExamNetGui:
         self.root.after(POLL_MS, self._poll_events)
         # Open Chrome straight away so the user can log in to exam.net before clicking Start.
         self.root.after(300, self._open_chrome)
+        threading.Thread(target=lambda: self.events.put(("update", check_for_update())), daemon=True).start()
 
     # ---------- layout ----------
 
@@ -412,11 +414,26 @@ class ExamNetGui:
                         messagebox.showerror(
                             "Could not open the browser", f"{error}\n\nClick 'Open browser' to try again."
                         )
+                elif kind == "update" and event[1]:
+                    self._on_update_available(*event[1])
                 elif kind == "done":
                     self._on_run_finished(event[1])
         except queue.Empty:
             pass
         self.root.after(POLL_MS, self._poll_events)
+
+    def _on_update_available(self, latest, url):
+        message = f"Version {latest} is available (you have {__version__})."
+        if self.worker and self.worker.is_alive():
+            self.status.set(f"{message} Download it from the About window after this run.")
+            return
+        if messagebox.askyesno(
+            "Update available",
+            f"{message}\n\nExam.net sometimes changes its pages, which can stop older versions working.\n\n"
+            "Open the download page now?",
+            parent=self.root,
+        ):
+            webbrowser.open(url)
 
     def _on_run_finished(self, error):
         self._set_running(False)
