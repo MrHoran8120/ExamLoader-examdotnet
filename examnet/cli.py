@@ -2,12 +2,13 @@ import argparse
 import json
 import logging
 import os
+import platform
 import shutil
 import subprocess
 import sys
 from datetime import datetime
 
-from . import __version__
+from . import APP_NAME, LAST_VERIFIED, __version__
 from .paths import logs_dir
 
 
@@ -286,6 +287,19 @@ def configure_logging(log_level, log_file=None, no_log_file=False):
         handlers.append(file_handler)
 
     logging.basicConfig(level=level, handlers=handlers, force=True)
+    # First line of every log, so a log sent in for help shows which version produced it.
+    # Sent straight to the handlers so it is written whatever log level was chosen.
+    header = logging.LogRecord(
+        "examnet",
+        logging.INFO,
+        __file__,
+        0,
+        "%s %s (last checked against Exam.net %s) | Python %s | %s",
+        (APP_NAME, __version__, LAST_VERIFIED, platform.python_version(), platform.platform()),
+        None,
+    )
+    for handler in handlers:
+        handler.handle(header)
     return file_path
 
 

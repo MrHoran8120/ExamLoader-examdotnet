@@ -285,6 +285,29 @@ To add a new `question_type`:
 python -m unittest test_cli test_automator test_browser
 ```
 
+## Building the Windows app
+
+```powershell
+.\build.ps1
+```
+
+This installs the build tools from `requirements-build.txt` into `.venv`, runs the unit tests and builds
+`dist\ExamLoader\ExamLoader.exe` with PyInstaller (`packaging\ExamLoader.spec`). The build bundles Playwright's
+driver but no browsers. Test the exe from a different folder before releasing it.
+
+## Releasing
+
+The version lives in one place: `__version__` in `examnet/__init__.py`. The window title, About window, log files,
+the exe's file properties and the installer all read it from there. See `CHANGELOG.md` for what each part of the
+version number means.
+
+1. Fix or add the feature, then do a full live run against Exam.net (use "DUMMY ... delete me" questions).
+2. Update `examnet/__init__.py`: bump `__version__`, and set `LAST_VERIFIED` to the date of that live run.
+3. Add a `CHANGELOG.md` entry written for teachers ("Fixes list-match questions after Exam.net's October update").
+4. Run `.\build.ps1` and test `dist\ExamLoader\ExamLoader.exe`.
+5. Commit, tag and push: `git tag v1.0.1` then `git push --follow-tags`.
+6. Publish a GitHub Release for the tag with the installer attached and the changelog entry as its notes.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

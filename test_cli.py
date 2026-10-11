@@ -43,6 +43,26 @@ class CliTests(unittest.TestCase):
         self.assertGreaterEqual(len(payload), 4)
         self.assertIn("Schema printed, but clipboard copy was unavailable.", stderr.getvalue())
 
+    def test_log_file_starts_with_version_even_at_warning_level(self):
+        import logging
+        import os
+        import tempfile
+
+        from examnet import __version__
+
+        with tempfile.TemporaryDirectory() as tmp:
+            log_path = os.path.join(tmp, "run.log")
+            with redirect_stderr(io.StringIO()):
+                cli.configure_logging("WARNING", log_file=log_path)
+            for handler in logging.getLogger().handlers:
+                handler.close()
+            logging.getLogger().handlers.clear()
+            with open(log_path, encoding="utf-8") as f:
+                first_line = f.readline()
+
+        self.assertIn(f"ExamLoader for Exam.net {__version__}", first_line)
+        self.assertIn("INFO", first_line)
+
 
 if __name__ == "__main__":
     unittest.main()

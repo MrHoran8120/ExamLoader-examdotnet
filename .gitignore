@@ -14,6 +14,7 @@ __pycache__/
 build/
 dist/
 *.spec
+!packaging/*.spec
 *.egg-info/
 
 # --- Run output ---

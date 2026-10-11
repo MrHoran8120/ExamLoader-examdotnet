@@ -4,11 +4,12 @@ import os
 import queue
 import threading
 import tkinter as tk
+import webbrowser
 from collections import Counter
 from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
-from . import __version__
+from . import APP_NAME, DOWNLOAD_URL, LAST_VERIFIED, __version__
 from .browser import EXAM_NET_URL, BrowserNotFoundError, is_cdp_available, launch_browser
 from .cli import build_question_schema_text, configure_logging
 from .paths import data_file, documents_dir, logs_dir
@@ -17,7 +18,6 @@ from .json_precheck import _extract_json_payload, _strip_jsonc_comments, run_jso
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR"]
 POLL_MS = 100
 CLIPBOARD_FILE = "clipboard_questions.json"
-APP_NAME = "ExamLoader for Exam.net"
 
 
 def extract_clipboard_json(raw_text):
@@ -161,7 +161,8 @@ class ExamNetGui:
         self.progress.grid(row=0, column=2, sticky="ew", padx=6)
         self.chrome_btn = ttk.Button(run_frame, text="Open browser", command=self._open_chrome)
         self.chrome_btn.grid(row=0, column=3, padx=(0, 6))
-        ttk.Button(run_frame, text="Open logs folder", command=self._open_logs).grid(row=0, column=4)
+        ttk.Button(run_frame, text="Open logs folder", command=self._open_logs).grid(row=0, column=4, padx=(0, 6))
+        ttk.Button(run_frame, text="About", command=self._show_about).grid(row=0, column=5)
 
         ttk.Label(main, textvariable=self.status, anchor="w").grid(row=3, column=0, sticky="ew", **pad)
 
@@ -289,6 +290,36 @@ class ExamNetGui:
     def _open_logs(self):
         os.startfile(logs_dir())
 
+    def _show_about(self):
+        about = tk.Toplevel(self.root)
+        about.title(f"About {APP_NAME}")
+        about.resizable(False, False)
+        about.transient(self.root)
+        frame = ttk.Frame(about, padding=16)
+        frame.pack(fill="both", expand=True)
+        ttk.Label(frame, text=APP_NAME, font=("Segoe UI", 12, "bold")).pack(anchor="w")
+        ttk.Label(frame, text=f"Version {__version__}").pack(anchor="w", pady=(4, 0))
+        ttk.Label(frame, text=f"Last checked against Exam.net: {LAST_VERIFIED}").pack(anchor="w")
+        ttk.Label(
+            frame,
+            text="If questions stop being created correctly, Exam.net may have changed its pages.\n"
+            "Check the download page for a newer version.",
+            justify="left",
+        ).pack(anchor="w", pady=(10, 0))
+        ttk.Label(
+            frame,
+            text="Independent tool, not affiliated with or endorsed by Exam.net.\nMIT License.",
+            foreground="#555555",
+            justify="left",
+        ).pack(anchor="w", pady=(10, 0))
+        buttons = ttk.Frame(frame)
+        buttons.pack(anchor="e", pady=(14, 0))
+        ttk.Button(buttons, text="Open download page", command=lambda: webbrowser.open(DOWNLOAD_URL)).pack(
+            side="left", padx=(0, 6)
+        )
+        ttk.Button(buttons, text="Close", command=about.destroy).pack(side="left")
+        about.grab_set()
+
     def _start(self):
         path = self._resolved_json_path()
         if not path or (self.worker and self.worker.is_alive()):
@@ -395,7 +426,11 @@ class ExamNetGui:
         log_note = f"\n\nLog file: {self.log_file_path}" if self.log_file_path else ""
         if error:
             self.status.set("Run failed. See log below.")
-            messagebox.showerror("Run failed", f"{error}{log_note}")
+            messagebox.showerror(
+                "Run failed",
+                f"{error}{log_note}\n\nYou are using version {__version__} (last checked against Exam.net "
+                f"{LAST_VERIFIED}). If Exam.net has changed its pages, a newer version may fix this: see About.",
+            )
         else:
             self.status.set("Run finished. The browser window stays open.")
             messagebox.showinfo("Run finished", f"Run finished. Check the log for any failures.{log_note}")
