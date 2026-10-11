@@ -1,4 +1,6 @@
-__all__ = ["ExamNetAutomator"]
+__version__ = "0.9.0"
+
+__all__ = ["ExamNetAutomator", "__version__"]
 
 
 def __getattr__(name):

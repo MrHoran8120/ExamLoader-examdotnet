@@ -6,9 +6,10 @@ import time
 
 from playwright.sync_api import sync_playwright
 
-from long_answer_probe import LongAnswerProbe
-from .browser import launch_chrome
+from .browser import launch_browser
 from .json_precheck import _extract_json_payload, _strip_jsonc_comments, run_json_precheck
+from .long_answer_probe import LongAnswerProbe
+from .paths import data_file, diagnostics_dir
 from .question_html import fill_question_html, has_code_marks, strip_markdown_code_marks
 
 from .handlers import (
@@ -100,11 +101,10 @@ class ExamNetAutomator:
 
     def _capture_click_create_failure_diagnostics(self, prefix="create_question_click_failed"):
         try:
-            diagnostics_dir = os.path.join(os.getcwd(), "diagnostics")
-            os.makedirs(diagnostics_dir, exist_ok=True)
+            out_dir = diagnostics_dir()
             timestamp = time.strftime("%Y%m%d-%H%M%S")
-            png_path = os.path.join(diagnostics_dir, f"{prefix}_{timestamp}.png")
-            html_path = os.path.join(diagnostics_dir, f"{prefix}_{timestamp}.html")
+            png_path = os.path.join(out_dir, f"{prefix}_{timestamp}.png")
+            html_path = os.path.join(out_dir, f"{prefix}_{timestamp}.html")
             self.page.screenshot(path=png_path, full_page=True)
             with open(html_path, "w", encoding="utf-8") as f:
                 f.write(self.page.content())
@@ -168,7 +168,7 @@ class ExamNetAutomator:
                 pass
 
     def launch_cdp_browser(self):
-        launch_chrome(self.browser_url, logger=self.logger)
+        launch_browser(self.browser_url, logger=self.logger)
 
     def setup_browser(self):
         self.playwright = sync_playwright().start()
@@ -1002,7 +1002,7 @@ class ExamNetAutomator:
                 expected_final_count,
             )
             
-            failed_path = os.path.join(os.getcwd(), "failed_questions.json")
+            failed_path = data_file("failed_questions.json")
             with open(failed_path, "w", encoding="utf-8") as f:
                 json.dump([fitem["question"] for fitem in failed], f, indent=2, ensure_ascii=False)
             self.logger.error(

@@ -3,15 +3,14 @@ import html
 import json
 import logging
 import os
-import subprocess
 import sys
 import time
-from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 
-from examnet.question_html import fill_question_html, has_code_marks, strip_markdown_code_marks
+from .browser import launch_browser
+from .paths import diagnostics_dir
+from .question_html import fill_question_html, has_code_marks, strip_markdown_code_marks
 
 
 class LongAnswerProbe:
@@ -50,10 +49,6 @@ class LongAnswerProbe:
         self.context = None
         self.page = None
 
-        self.script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.diagnostics_dir = os.path.join(self.script_dir, "diagnostics")
-        os.makedirs(self.diagnostics_dir, exist_ok=True)
-
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(getattr(logging, log_level))
 
@@ -87,67 +82,7 @@ class LongAnswerProbe:
         return "exam.net" in u and "/print-builder/" in u
 
     def launch_cdp_browser(self):
-        self.logger.info("Launching Chrome in CDP mode...")
-        try:
-            if sys.platform.startswith("win"):
-                chrome_cmd = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-                args = [
-                    chrome_cmd,
-                    "--remote-debugging-port=9222",
-                    "--user-data-dir=C:\\Temp\\chrome-debug-profile",
-                    "--no-first-run",
-                    "--no-default-browser-check",
-                    "--new-window",
-                    "about:blank",
-                ]
-            elif sys.platform.startswith("darwin"):
-                args = [
-                    "open",
-                    "-a",
-                    "Google Chrome",
-                    "--args",
-                    "--remote-debugging-port=9222",
-                    "--user-data-dir=/tmp/chrome-debug-profile",
-                    "--no-first-run",
-                    "--no-default-browser-check",
-                    "--new-window",
-                    "about:blank",
-                ]
-            else:
-                args = [
-                    "google-chrome",
-                    "--remote-debugging-port=9222",
-                    "--user-data-dir=/tmp/chrome-debug-profile",
-                    "--no-first-run",
-                    "--no-default-browser-check",
-                    "--new-window",
-                    "about:blank",
-                ]
-
-            subprocess.Popen(args)
-        except Exception as e:
-            raise RuntimeError(f"Error launching Chrome in CDP mode: {e}") from e
-
-        self.wait_for_cdp_port()
-
-    def wait_for_cdp_port(self, url="http://127.0.0.1:9222/json/version", timeout=20, interval=0.5):
-        self.logger.debug("Waiting for Chrome CDP port...")
-        start = time.time()
-        last_error = None
-        while time.time() - start < timeout:
-            try:
-                with urlopen(url) as response:
-                    if response.status == 200:
-                        self.logger.debug("Chrome CDP port is available.")
-                        return
-            except HTTPError as e:
-                last_error = e
-            except URLError as e:
-                last_error = e
-            except Exception as e:
-                last_error = e
-            time.sleep(interval)
-        raise RuntimeError(f"Chrome CDP port did not become available. Last error: {last_error}")
+        launch_browser(self.browser_url, logger=self.logger)
 
     def setup_browser(self, assume_ready=False):
         self.playwright = sync_playwright().start()
@@ -167,7 +102,7 @@ class LongAnswerProbe:
         if "exam.net" not in self.page.url or not self.has_create_question_button(timeout=3000):
             self.page.goto("https://exam.net")
             self.logger.debug("Opened exam.net. Log in and open your exam page.")
-            if self.interactive and sys.stdin.isatty():
+            if self.interactive and sys.stdin and sys.stdin.isatty():
                 input("Press ENTER after login when the 'Create question' button is visible... ")
             elif self.interactive:
                 self.logger.debug("Non-interactive stdin detected; waiting for 'Create question' to appear...")
@@ -1591,8 +1526,8 @@ class LongAnswerProbe:
 
     def capture_diagnostics(self, prefix):
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        screenshot_path = os.path.join(self.diagnostics_dir, f"{prefix}_{timestamp}.png")
-        html_path = os.path.join(self.diagnostics_dir, f"{prefix}_{timestamp}.html")
+        screenshot_path = os.path.join(diagnostics_dir(), f"{prefix}_{timestamp}.png")
+        html_path = os.path.join(diagnostics_dir(), f"{prefix}_{timestamp}.html")
         try:
             self.page.screenshot(path=screenshot_path, full_page=True)
             with open(html_path, "w", encoding="utf-8") as f:

@@ -8,8 +8,10 @@ from collections import Counter
 from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
-from .browser import EXAM_NET_URL, is_cdp_available, launch_chrome
+from . import __version__
+from .browser import EXAM_NET_URL, BrowserNotFoundError, is_cdp_available, launch_browser
 from .cli import build_question_schema_text, configure_logging
+from .paths import data_file, documents_dir, logs_dir
 from .json_precheck import _extract_json_payload, _strip_jsonc_comments, run_json_precheck
 
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR"]
@@ -70,8 +72,7 @@ class ExamNetGui:
         self.worker = None
         self.stop_requested = threading.Event()
 
-        default_json = os.path.join(os.getcwd(), "questions.json")
-        self.json_path = tk.StringVar(value=default_json if os.path.exists(default_json) else "")
+        self.json_path = tk.StringVar(value="")
         self.continue_on_error = tk.BooleanVar(value=False)
         self.bypass_precheck = tk.BooleanVar(value=False)
         self.max_attempts = tk.IntVar(value=1)
@@ -92,7 +93,7 @@ class ExamNetGui:
     # ---------- layout ----------
 
     def _build(self):
-        self.root.title(APP_NAME)
+        self.root.title(f"{APP_NAME} {__version__}")
         self.root.minsize(760, 560)
         pad = {"padx": 8, "pady": 4}
 
@@ -136,7 +137,7 @@ class ExamNetGui:
         self.adv_toggle = ttk.Button(opt_frame, text="Show advanced ▸", command=self._toggle_advanced)
         self.adv_toggle.grid(row=1, column=0, sticky="w", pady=(6, 0))
         self.adv_frame = ttk.Frame(opt_frame)
-        ttk.Label(self.adv_frame, text="Chrome debug URL:").grid(row=0, column=0, sticky="e")
+        ttk.Label(self.adv_frame, text="Browser debug URL:").grid(row=0, column=0, sticky="e")
         ttk.Entry(self.adv_frame, textvariable=self.browser_url, width=28).grid(row=0, column=1, sticky="w", padx=4)
         ttk.Checkbutton(
             self.adv_frame, text="Highlight 'Create question' before clicking (ms):", variable=self.debug_preview
@@ -158,7 +159,7 @@ class ExamNetGui:
         self.stop_btn.grid(row=0, column=1, padx=(0, 6))
         self.progress = ttk.Progressbar(run_frame, mode="determinate")
         self.progress.grid(row=0, column=2, sticky="ew", padx=6)
-        self.chrome_btn = ttk.Button(run_frame, text="Open Chrome", command=self._open_chrome)
+        self.chrome_btn = ttk.Button(run_frame, text="Open browser", command=self._open_chrome)
         self.chrome_btn.grid(row=0, column=3, padx=(0, 6))
         ttk.Button(run_frame, text="Open logs folder", command=self._open_logs).grid(row=0, column=4)
 
@@ -206,7 +207,7 @@ class ExamNetGui:
     # ---------- actions ----------
 
     def _browse(self):
-        initial = os.path.dirname(self.json_path.get()) or os.getcwd()
+        initial = os.path.dirname(self.json_path.get()) or documents_dir()
         path = filedialog.askopenfilename(
             title="Choose questions JSON file",
             initialdir=initial,
@@ -233,7 +234,7 @@ class ExamNetGui:
         ):
             return
 
-        path = os.path.join(os.getcwd(), CLIPBOARD_FILE)
+        path = data_file(CLIPBOARD_FILE)
         with open(path, "w", encoding="utf-8") as f:
             f.write(payload)
         self.json_path.set(path)
@@ -270,25 +271,23 @@ class ExamNetGui:
     def _open_chrome(self):
         browser_url = self.browser_url.get().strip()
         self.chrome_btn.configure(state="disabled")
-        self.status.set("Opening Chrome...")
+        self.status.set("Opening the browser...")
 
         def worker():
             try:
                 if is_cdp_available(browser_url):
-                    message = "Chrome is open. Log in to exam.net and open your exam, then click Start."
+                    message = "The browser is open. Log in to exam.net and open your exam, then click Start."
                 else:
-                    launch_chrome(browser_url, start_url=EXAM_NET_URL)
-                    message = "Chrome opened. Log in to exam.net and open your exam, then click Start."
+                    name = launch_browser(browser_url, start_url=EXAM_NET_URL)
+                    message = f"{name} opened. Log in to exam.net and open your exam, then click Start."
                 self.events.put(("chrome", message, None))
             except Exception as e:
-                self.events.put(("chrome", "Could not open Chrome.", e))
+                self.events.put(("chrome", "Could not open the browser.", e))
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _open_logs(self):
-        logs_dir = os.path.join(os.getcwd(), "logs")
-        os.makedirs(logs_dir, exist_ok=True)
-        os.startfile(logs_dir)
+        os.startfile(logs_dir())
 
     def _start(self):
         path = self._resolved_json_path()
@@ -375,10 +374,12 @@ class ExamNetGui:
                     self.chrome_btn.configure(state="normal")
                     if not (self.worker and self.worker.is_alive()):
                         self.status.set(event[1])
-                    if event[2]:
+                    error = event[2]
+                    if isinstance(error, BrowserNotFoundError):
+                        messagebox.showerror("Browser not found", str(error))
+                    elif error:
                         messagebox.showerror(
-                            "Could not open Chrome",
-                            f"{event[2]}\n\nCheck that Google Chrome is installed, then click 'Open Chrome'.",
+                            "Could not open the browser", f"{error}\n\nClick 'Open browser' to try again."
                         )
                 elif kind == "done":
                     self._on_run_finished(event[1])
@@ -396,7 +397,7 @@ class ExamNetGui:
             self.status.set("Run failed. See log below.")
             messagebox.showerror("Run failed", f"{error}{log_note}")
         else:
-            self.status.set("Run finished. The Chrome window stays open.")
+            self.status.set("Run finished. The browser window stays open.")
             messagebox.showinfo("Run finished", f"Run finished. Check the log for any failures.{log_note}")
 
     def _on_close(self):

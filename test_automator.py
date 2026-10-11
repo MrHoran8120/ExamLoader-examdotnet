@@ -6,7 +6,8 @@ from examnet.automator import ExamNetAutomator
 
 class AutomatorRunOrderTests(unittest.TestCase):
     def test_run_processes_questions_in_json_order(self):
-        automator = ExamNetAutomator(interactive=False)
+        # load_questions is mocked below, so skip the precheck that reads the JSON file from disk.
+        automator = ExamNetAutomator(interactive=False, bypass_json_precheck=True)
         questions = [
             {"question_type": "multiple_choice", "question": "Question 1", "options": ["A", "B"], "answer": "A"},
             {"question_type": "multiple_choice", "question": "Question 2", "options": ["A", "B"], "answer": "A"},

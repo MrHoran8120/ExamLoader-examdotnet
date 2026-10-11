@@ -1,4 +1,4 @@
-from long_answer_probe import extract_question_fields
+from ..long_answer_probe import extract_question_fields
 
 LONG_ANSWER_TYPES = {"long_answer", "free_text", "freetext"}
 

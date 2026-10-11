@@ -1,4 +1,4 @@
-from long_answer_probe import extract_question_fields
+from ..long_answer_probe import extract_question_fields
 
 LIST_MATCH_TYPES = {"list_match", "match_list"}
 

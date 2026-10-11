@@ -7,6 +7,9 @@ import subprocess
 import sys
 from datetime import datetime
 
+from . import __version__
+from .paths import logs_dir
+
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Automate exam.net question creation for multiple question types from JSON.")
@@ -31,8 +34,10 @@ def build_parser():
     parser.add_argument(
         "--log-file",
         default=None,
-        help="Optional explicit log file path. If omitted, a timestamped file is created in ./logs/.",
+        help="Optional explicit log file path. If omitted, a timestamped file is created in the ExamLoader logs folder "
+        "(%%LOCALAPPDATA%%\\ExamLoader\\logs on Windows).",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
         "--no-log-file",
         action="store_true",
@@ -261,8 +266,12 @@ def configure_logging(log_level, log_file=None, no_log_file=False):
     level = getattr(logging, log_level)
     formatter = logging.Formatter("%(asctime)s.%(msecs)03d %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
-    handlers = [logging.StreamHandler()]
-    handlers[0].setFormatter(formatter)
+    handlers = []
+    # A windowed build (no console) has sys.stderr set to None.
+    if sys.stderr is not None:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        handlers.append(console_handler)
 
     file_path = None
     if not no_log_file:
@@ -270,9 +279,7 @@ def configure_logging(log_level, log_file=None, no_log_file=False):
             file_path = log_file
         else:
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            logs_dir = os.path.join(os.getcwd(), "logs")
-            os.makedirs(logs_dir, exist_ok=True)
-            file_path = os.path.join(logs_dir, f"examnet_{timestamp}.log")
+            file_path = os.path.join(logs_dir(), f"examnet_{timestamp}.log")
 
         file_handler = logging.FileHandler(file_path, encoding="utf-8")
         file_handler.setFormatter(formatter)

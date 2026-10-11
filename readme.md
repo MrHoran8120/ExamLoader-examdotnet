@@ -1,14 +1,15 @@
 # ExamLoader for Exam.net
 
 ExamLoader loads exam questions from a JSON file into [Exam.net](https://exam.net), using Playwright and a
-Chrome CDP (remote debugging) connection. It is part of the ExamLoader family of tools for teachers
+Chrome (or Microsoft Edge) CDP (remote debugging) connection. It is part of the ExamLoader family of tools for teachers
 (see also ExamLoader for Gradeo).
 
 > ExamLoader is an independent tool and is not affiliated with, or endorsed by, Exam.net.
 
 ## Overview
 
-* **Launch/Connect to Chrome**: Opens Chrome in CDP mode (port 9222) or connects to an existing session.
+* **Launch/Connect to the browser**: Opens Chrome in CDP mode (port 9222), falling back to Microsoft Edge if Chrome
+  isn't installed, or connects to an existing session.
 * **Read & Validate JSON**: Loads one JSON file that can contain multiple-choice, list-match, and long-answer payloads.
   Invalid payloads fail fast before browser automation starts, with per-question field errors.
 * **Automate Question Creation**: Navigates the exam.net UI and creates each question based on `question_type`.
@@ -17,20 +18,30 @@ Chrome CDP (remote debugging) connection. It is part of the ExamLoader family of
 ## Prerequisites
 
 * **Python 3.8+**
-* **Playwright** (`pip install playwright`)
-* **Google Chrome** installed on your system
-* **Playwright Browsers** installed via `playwright install`
+* **Google Chrome** or **Microsoft Edge** installed on your system. ExamLoader drives your installed browser, so
+  Playwright's own browser downloads (`playwright install`) are not needed.
 
 ## Installation
 
 1. **Clone or Download** this repository.
-2. **Install dependencies**:
+2. **Install dependencies** (the Windows launchers do this for you in `.venv`):
 
    ```bash
-   pip install playwright
-   playwright install
+   pip install -r requirements.txt
    ```
-3. **Ensure** Chrome is available and no other process is using port `9222` (or pass a different value with `--browser-url`).
+3. **Ensure** no other process is using port `9222` (or pass a different value with `--browser-url`).
+
+## Where files are saved
+
+ExamLoader writes everything to a per-user folder, never next to the code:
+
+* Windows: `%LOCALAPPDATA%\ExamLoader\` (macOS: `~/Library/Application Support/ExamLoader/`)
+  * `logs\`: one log file per run (the GUI's **Open logs folder** button opens it)
+  * `diagnostics\`: screenshots and page HTML saved when a step fails
+  * `failed_questions.json`: the questions from the last run that failed, ready to re-run
+  * `clipboard_questions.json`: the last JSON pasted into the GUI
+  * `browser-profile-chrome\` / `browser-profile-edge\`: the separate browser profile ExamLoader opens, so you stay
+    logged in to Exam.net between runs without touching your normal browser profile
 
 ## Usage
 
@@ -60,7 +71,7 @@ The launcher will automatically:
 Double-click `launch_examdotnet_gui.bat` (or run `.\launch_examdotnet.ps1 -Gui`, or `python -m examnet.gui`).
 
 The window lets you pick the questions JSON file (or **Paste from clipboard**, e.g. straight from a ChatGPT reply,
-which is saved to `clipboard_questions.json`), **Validate** it without opening a browser, set the run options,
+which is saved to `clipboard_questions.json` in the ExamLoader folder), **Validate** it without opening a browser, set the run options,
 **Start** the run and watch progress and the log. Login and confirmation prompts appear as dialog boxes instead of
 "Press ENTER" terminal prompts. **Stop after current question** ends a run cleanly between questions.
 The command-line interface below is unchanged.
@@ -245,12 +256,13 @@ print(total / 5)"
 
 ## Troubleshooting
 
-* **Port Conflicts**: Ensure no other Chrome instance uses `--remote-debugging-port=9222`.
-* **Playwright Installation**: Run `playwright install` if browsers are missing.
+* **Port Conflicts**: Ensure no other Chrome or Edge instance uses `--remote-debugging-port=9222`.
+* **Browser Not Found**: ExamLoader looks for Chrome (machine-wide or per-user install), then Edge. Install Chrome
+  if neither is found.
 * **Selector Mismatches**: If elements are not found, inspect the exam.net UI and update selectors in:
   * `examnet/handlers/multiple_choice.py` (multiple choice)
   * `examnet/handlers/fill_gaps.py` (fill gaps)
-  * `long_answer_probe.py` (long answer and list match controls)
+  * `examnet/long_answer_probe.py` (long answer and list match controls)
 * **Non-Interactive Failures**: If `--non-interactive` fails with setup/login readiness errors, run once in interactive mode first.
 
 ## Adding Question Types
@@ -266,3 +278,13 @@ To add a new `question_type`:
    * `validate_question` -> call your new validator
    * `process_question` -> call your new processor
 5. Add one sample item to `questions.json` and run the validation-only command first.
+
+## Tests
+
+```bash
+python -m unittest test_cli test_automator test_browser
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
