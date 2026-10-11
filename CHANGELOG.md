@@ -6,7 +6,9 @@ Version numbers are MAJOR.MINOR.PATCH:
 * **MINOR** (1.1.0): new features such as a new question type. Existing question files still work.
 * **MAJOR** (2.0.0): existing question files (JSON) would need changing.
 
-## 1.0.0 (unreleased)
+## 1.0.0 (2026-10-11)
+
+First public release.
 
 * Windows installer: installs for your account only (no administrator password), with a Start menu shortcut
   and an uninstaller.
