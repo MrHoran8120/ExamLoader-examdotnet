@@ -1,0 +1,121 @@
+﻿[
+  {
+    "question_id": "MC-001",
+    "question_type": "multiple_choice",
+    "question": "<Write the multiple-choice question>",
+    "options": [
+      "<Option A>",
+      "<Option B>",
+      "<Option C>",
+      "<Option D>"
+    ],
+    "answer": "<One correct option exactly matching one item in options>",
+    "mark": {
+      "points": 1
+    }
+  },
+  {
+    "question_id": "MC-002",
+    "question_type": "multiple_choice",
+    "question": "<Write a multi-select question>",
+    "options": [
+      "<Option 1>",
+      "<Option 2>",
+      "<Option 3>",
+      "<Option 4>"
+    ],
+    "answers": [
+      "<Correct option 1>",
+      "<Correct option 2>"
+    ],
+    "mark": {
+      "points": 2
+    }
+  },
+  {
+    "question_id": "LM-001",
+    "question_type": "list_match",
+    "question_text": "<Write the list match instruction>",
+    "pairs": [
+      {
+        "left": "<Left item 1>",
+        "right": "<Right item 1>"
+      },
+      {
+        "left": "<Left item 2>",
+        "right": "<Right item 2>"
+      }
+    ],
+    "mark": {
+      "points": 2
+    }
+  },
+  {
+    "question_id": "FG-001",
+    "question_type": "fill_gaps",
+    "question_text": "<Sentence or paragraph where answers will be used as gaps>",
+    "gaps": [
+      {
+        "answer": "<Gap answer 1>"
+      },
+      {
+        "answer": "<Gap answer 2>"
+      }
+    ],
+    "word_bank_enabled": true,
+    "word_bank_extras": [
+      "<Optional incorrect word 1>",
+      "<Optional incorrect word 2>"
+    ],
+    "mark": {
+      "points": 2
+    }
+  },
+  {
+    "question_id": "LA-001",
+    "question_type": "long_answer",
+    "question_text": "<Write the long-answer question>",
+    "answer_options": {
+      "rubric": {
+        "format": "banded",
+        "bands": [
+          {
+            "marks": 5,
+            "criteria": [
+              "<Top-band criterion 1>",
+              "<Top-band criterion 2>"
+            ]
+          },
+          {
+            "marks": 3,
+            "criteria": [
+              "<Mid-band criterion>"
+            ]
+          },
+          {
+            "marks": 1,
+            "criteria": [
+              "<Low-band criterion>"
+            ]
+          }
+        ]
+      },
+      "sample_answer": "<Optional high-quality sample answer>"
+    },
+    "mark": {
+      "points": 5
+    }
+  },
+  {
+    "question_id": "PY-001",
+    "question_type": "python_program",
+    "question_text": "<Describe the Python program students must write>",
+    "answer_options": {
+      "rubric": "<Optional marking criteria>",
+      "sample_answer": "<Optional sample Python solution>"
+    },
+    "mark": {
+      "points": 4
+    }
+  }
+]

@@ -1,0 +1,42 @@
+# --- Python environment & caches ---
+.venv/
+venv/
+env/
+.env
+__pycache__/
+*.py[cod]
+*.pyc.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Build / packaging output ---
+build/
+dist/
+*.spec
+*.egg-info/
+
+# --- Run output ---
+logs/
+*.log
+diagnostics/
+
+# --- Exam content & question payloads ---
+# Ignore all JSON except the templates needed for setup.
+*.json
+!sample_questions.json
+!questions_prompt_template.json
+# Question files saved without a .json extension
+examnet/2026 SE Task 1 v1
+# Source exam documents
+*.pdf
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- Local notes ---
+HANDOFF.md

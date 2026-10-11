@@ -1,0 +1,83 @@
+[
+  {
+    "question_id": "MC-001",
+    "question_type": "multiple_choice",
+    "question": "Which protocol is primarily used to securely browse websites?",
+    "options": [
+      "HTTP",
+      "FTP",
+      "HTTPS",
+      "SMTP"
+    ],
+    "answer": "HTTPS",
+    "mark": {
+      "points": 1
+    }
+  },
+  {
+    "question_id": "LM-001",
+    "question_type": "list_match",
+    "question_text": "Match each computing term to its definition.",
+    "pairs": [
+      { "left": "CPU", "right": "Executes instructions" },
+      { "left": "RAM", "right": "Temporary working memory" },
+      { "left": "SSD", "right": "Persistent data storage" },
+      { "left": "GPU", "right": "Processes graphics operations" }
+    ],
+    "mark": {
+      "points": 2
+    }
+  },
+  {
+    "question_id": "LA-001",
+    "question_type": "long_answer",
+    "question_text": "Explain how decomposition and abstraction help when solving complex programming problems.",
+    "answer_options": {
+      "rubric": {
+        "format": "banded",
+        "bands": [
+          {
+            "marks": 5,
+            "criteria": [
+              "Clearly explains both decomposition and abstraction",
+              "Shows how they reduce complexity",
+              "Uses relevant programming examples"
+            ]
+          },
+          {
+            "marks": 3,
+            "criteria": [
+              "Explains both concepts with limited detail",
+              "Includes at least one relevant example"
+            ]
+          },
+          {
+            "marks": 1,
+            "criteria": [
+              "Minimal explanation with little or no example"
+            ]
+          }
+        ]
+      },
+      "sample_answer": "Decomposition breaks a large problem into smaller tasks, while abstraction focuses on essential details and hides unnecessary complexity. Together they make systems easier to design, test, and maintain."
+    },
+    "mark": {
+      "points": 5
+    }
+  },
+  {
+    "question_id": "FG-001",
+    "question_type": "fill_gaps",
+    "question_text": "A program uses variables to store data. During execution, input is received from the user and output is displayed on the screen. Repeated actions are handled using iteration.",
+    "gaps": [
+      { "answer": "variables" },
+      { "answer": "input" },
+      { "answer": "output" },
+      { "answer": "iteration" }
+    ],
+    "mark": {
+      "points": 4
+    }
+  }
+]
+
