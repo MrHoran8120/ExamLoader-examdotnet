@@ -1,7 +1,7 @@
 ; Inno Setup script for ExamLoader for Exam.net. Run via: .\build.ps1 -Installer
 ; build.ps1 passes /DAppVersion=<examnet.__version__>; the app itself must already be built in dist\ExamLoader.
 ;
-; Per-user install (no admin rights): installs to %LOCALAPPDATA%\Programs\ExamLoader for Exam.net.
+; Per-user install (no admin rights): defaults to %LOCALAPPDATA%\Programs\ExamLoader for Exam.net; the user can pick another folder.
 ; Uninstalling keeps the user's data in %LOCALAPPDATA%\ExamLoader (logs, browser profile with the Exam.net login).
 
 #ifndef AppVersion
@@ -26,7 +26,8 @@ VersionInfoVersion={#AppVersion}
 PrivilegesRequired=lowest
 DefaultDirName={autopf}\{#AppName}
 DisableProgramGroupPage=yes
-DisableDirPage=yes
+; auto: ask for the install folder on a first install; upgrades reuse the existing folder without asking.
+DisableDirPage=auto
 DisableReadyPage=yes
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
