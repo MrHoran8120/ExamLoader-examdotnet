@@ -1,18 +1,13 @@
 # PyInstaller build for the ExamLoader for Exam.net GUI. Run via build.ps1.
 # One-folder, windowed build. Playwright's own hook bundles its driver (node.exe);
 # no browsers are bundled because the app drives the installed Chrome or Edge.
+# On macOS (build_mac.sh) it builds dist/ExamLoader.app instead.
 import os
 import re
+import sys
 
-from PyInstaller.utils.win32.versioninfo import (
-    FixedFileInfo,
-    StringFileInfo,
-    StringStruct,
-    StringTable,
-    VarFileInfo,
-    VarStruct,
-    VSVersionInfo,
-)
+IS_WINDOWS = sys.platform.startswith("win")
+IS_MAC = sys.platform == "darwin"
 
 ROOT = os.path.abspath(os.path.join(SPECPATH, ".."))
 
@@ -20,27 +15,39 @@ with open(os.path.join(ROOT, "examnet", "__init__.py"), encoding="utf-8") as f:
     VERSION = re.search(r'__version__\s*=\s*"([^"]+)"', f.read()).group(1)
 version_tuple = tuple(int(part) for part in (VERSION.split(".") + ["0"] * 4)[:4])
 
-version_info = VSVersionInfo(
-    ffi=FixedFileInfo(filevers=version_tuple, prodvers=version_tuple),
-    kids=[
-        StringFileInfo(
-            [
-                StringTable(
-                    "040904B0",
-                    [
-                        StringStruct("ProductName", "ExamLoader for Exam.net"),
-                        StringStruct("FileDescription", "ExamLoader for Exam.net"),
-                        StringStruct("FileVersion", VERSION),
-                        StringStruct("ProductVersion", VERSION),
-                        StringStruct("OriginalFilename", "ExamLoader.exe"),
-                        StringStruct("LegalCopyright", "MIT License. Not affiliated with Exam.net."),
-                    ],
-                )
-            ]
-        ),
-        VarFileInfo([VarStruct("Translation", [1033, 1200])]),
-    ],
-)
+version_info = None
+if IS_WINDOWS:
+    from PyInstaller.utils.win32.versioninfo import (
+        FixedFileInfo,
+        StringFileInfo,
+        StringStruct,
+        StringTable,
+        VarFileInfo,
+        VarStruct,
+        VSVersionInfo,
+    )
+
+    version_info = VSVersionInfo(
+        ffi=FixedFileInfo(filevers=version_tuple, prodvers=version_tuple),
+        kids=[
+            StringFileInfo(
+                [
+                    StringTable(
+                        "040904B0",
+                        [
+                            StringStruct("ProductName", "ExamLoader for Exam.net"),
+                            StringStruct("FileDescription", "ExamLoader for Exam.net"),
+                            StringStruct("FileVersion", VERSION),
+                            StringStruct("ProductVersion", VERSION),
+                            StringStruct("OriginalFilename", "ExamLoader.exe"),
+                            StringStruct("LegalCopyright", "MIT License. Not affiliated with Exam.net."),
+                        ],
+                    )
+                ]
+            ),
+            VarFileInfo([VarStruct("Translation", [1033, 1200])]),
+        ],
+    )
 
 a = Analysis(
     [os.path.join(SPECPATH, "examloader_gui.py")],
@@ -64,3 +71,18 @@ exe = EXE(
 )
 
 coll = COLLECT(exe, a.binaries, a.datas, name="ExamLoader")
+
+if IS_MAC:
+    app = BUNDLE(
+        coll,
+        name="ExamLoader.app",
+        bundle_identifier="io.github.mrhoran8120.examloader-examdotnet",
+        version=VERSION,
+        info_plist={
+            "CFBundleDisplayName": "ExamLoader for Exam.net",
+            "CFBundleShortVersionString": VERSION,
+            "NSHumanReadableCopyright": "MIT License. Not affiliated with Exam.net.",
+            "NSHighResolutionCapable": True,
+            "LSMinimumSystemVersion": "11.0",
+        },
+    )

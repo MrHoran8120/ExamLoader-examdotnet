@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import queue
+import subprocess
+import sys
 import threading
 import tkinter as tk
 import webbrowser
@@ -290,7 +292,10 @@ class ExamNetGui:
         threading.Thread(target=worker, daemon=True).start()
 
     def _open_logs(self):
-        os.startfile(logs_dir())
+        if sys.platform.startswith("win"):
+            os.startfile(logs_dir())
+        else:
+            subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(logs_dir())])
 
     def _show_about(self):
         about = tk.Toplevel(self.root)

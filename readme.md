@@ -19,6 +19,18 @@ It is part of the ExamLoader family of tools for teachers (see also ExamLoader f
 You need **Google Chrome** or **Microsoft Edge**. Install ExamLoader on your own computer; school-managed computers
 may block it.
 
+## For teachers: download and install (Mac)
+
+1. Download `ExamLoader-examdotnet-mac-<version>.dmg` from the
+   [latest release](https://github.com/MrHoran8120/ExamLoader-examdotnet/releases/latest). It runs on Apple Silicon
+   Macs (M1 or newer) with macOS 11 or later.
+2. Open the `.dmg` and drag **ExamLoader** into **Applications**.
+3. The first time you open it, macOS says it can't check the app for malicious software, because ExamLoader is a free
+   tool without a paid Apple developer certificate. Click **Done**, then open **System Settings > Privacy & Security**,
+   scroll down and click **Open Anyway** next to ExamLoader.
+
+You need **Google Chrome** or **Microsoft Edge** in your Applications folder.
+
 ### Using it
 
 1. Start **ExamLoader for Exam.net**. A browser window opens on Exam.net: log in and open the exam you want to add
@@ -330,6 +342,17 @@ driver but no browsers. Test the exe from a different folder before releasing it
 
 The app checks GitHub's latest (non-pre-release) release when it starts and offers the download page if it is newer.
 
+## Building the Mac app
+
+```bash
+./build_mac.sh
+```
+
+This builds `dist/ExamLoader.app` and `dist/ExamLoader-examdotnet-mac-<version>.dmg` from the same
+`packaging/ExamLoader.spec`. Use Python 3.10+ with Tk 8.6 or newer (for example `uv python install 3.12`): Apple's
+built-in Python 3.9 ships Tk 8.5, which draws blank windows on recent macOS. If `uv` is installed the script creates
+`.venv` with it. The app is unsigned and built for the Mac's own architecture (arm64 on Apple Silicon).
+
 ## Releasing
 
 The version lives in one place: `__version__` in `examnet/__init__.py`. The window title, About window, log files,
@@ -340,8 +363,10 @@ version number means.
 2. Update `examnet/__init__.py`: bump `__version__`, and set `LAST_VERIFIED` to the date of that live run.
 3. Add a `CHANGELOG.md` entry written for teachers ("Fixes list-match questions after Exam.net's October update").
 4. Run `.\build.ps1 -Installer`, then install `dist\ExamLoader-examdotnet-setup-<version>.exe` and test it.
+   On a Mac, run `./build_mac.sh` and test the `.dmg`.
 5. Commit, tag and push: `git tag v1.0.1` then `git push --follow-tags`.
-6. Publish a GitHub Release for the tag with the installer attached and the changelog entry as its notes.
+6. Publish a GitHub Release for the tag with the Windows installer and Mac `.dmg` attached and the changelog entry
+   as its notes.
 
 ## License
 
