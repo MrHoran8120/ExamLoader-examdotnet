@@ -7,6 +7,14 @@ import time
 from playwright.sync_api import sync_playwright
 
 from .browser import launch_browser
+from .images import (
+    PACKAGE_FORMAT,
+    close_package,
+    insert_question_images,
+    open_package,
+    resolve_question_images,
+    validate_question_images,
+)
 from .json_precheck import _extract_json_payload, _strip_jsonc_comments, run_json_precheck
 from .long_answer_probe import LongAnswerProbe
 from .paths import data_file, diagnostics_dir
@@ -58,6 +66,10 @@ class ExamNetAutomator:
             self.json_file = json_file
         else:
             self.json_file = os.path.join(os.getcwd(), json_file)
+        # Image paths are relative to the questions file. A .zip package is unpacked by open_input().
+        self.base_dir = os.path.dirname(self.json_file)
+        self.package_temp_dir = None
+        self.pending_images = {}
         self.interactive = interactive
         self.max_attempts = max(1, int(max_attempts))
         self.stop_on_error = bool(stop_on_error)
@@ -267,6 +279,17 @@ class ExamNetAutomator:
             self.logger.debug("wait_for_question_creation_ready last error: %s", last_error)
         return False
 
+    def open_input(self):
+        """Unpack a .zip exam package (questions.json plus images) so the run can read it."""
+        json_file, self.base_dir, self.package_temp_dir = open_package(self.json_file)
+        if json_file != self.json_file:
+            self.logger.info("Opened exam package '%s'.", os.path.basename(self.json_file))
+            self.json_file = json_file
+
+    def close_input(self):
+        close_package(self.package_temp_dir)
+        self.package_temp_dir = None
+
     def load_questions(self):
         if not os.path.exists(self.json_file):
             raise FileNotFoundError(f"Questions file not found: {self.json_file}")
@@ -327,6 +350,14 @@ class ExamNetAutomator:
             return raw_payload
         if isinstance(raw_payload, dict):
             if isinstance(raw_payload.get("questions"), list):
+                payload_format = raw_payload.get("format")
+                if payload_format and payload_format != PACKAGE_FORMAT:
+                    self.logger.warning(
+                        "Questions file says format '%s'; this version reads '%s'. "
+                        "Copy fresh AI instructions if questions fail to validate.",
+                        payload_format,
+                        PACKAGE_FORMAT,
+                    )
                 return raw_payload["questions"]
             return [raw_payload]
         raise ValueError("JSON payload must be an array or an object with optional 'questions' array.")
@@ -369,6 +400,12 @@ class ExamNetAutomator:
         return "long_answer"
 
     def validate_question(self, question, index):
+        errors = self._validate_question_fields(question, index)
+        if isinstance(question, dict):
+            errors.extend(validate_question_images(question, f"Question {index}", self.base_dir))
+        return errors
+
+    def _validate_question_fields(self, question, index):
         idx_label = f"Question {index}"
         if not isinstance(question, dict):
             return [f"{idx_label}: must be an object."]
@@ -759,12 +796,11 @@ class ExamNetAutomator:
     def fill_question_text(self, question_text):
         question_selector = '[data-testid="question-formulation-input"] div.fr-element.fr-view[contenteditable="true"]'
         self.page.wait_for_selector(question_selector, state="visible")
-        if has_code_marks(question_text):
-            if fill_question_html(self.page, question_text, self.logger):
-                return
+        if not (has_code_marks(question_text) and fill_question_html(self.page, question_text, self.logger)):
             question_text = strip_markdown_code_marks(question_text)
-        self.page.locator(question_selector).locator(":visible").last.fill(question_text)
-        self.logger.debug("Filled in question text.")
+            self.page.locator(question_selector).locator(":visible").last.fill(question_text)
+            self.logger.debug("Filled in question text.")
+        insert_question_images(self.page, self.pending_images, self.logger)
 
     def save_question(self):
         selectors = [
@@ -840,9 +876,18 @@ class ExamNetAutomator:
         self.long_answer_probe.debug_create_preview = self.debug_create_preview
         self.long_answer_probe.debug_create_preview_ms = self.debug_create_preview_ms
         self.long_answer_probe.debug_create_confirm = self.debug_create_confirm
+        self.long_answer_probe.pending_images = self.pending_images
         return self.long_answer_probe
 
     def process_question(self, question, idx=None):
+        # Read by fill_question_text (and the long-answer probe) once the question text is in.
+        self.pending_images = resolve_question_images(question, self.base_dir)
+        try:
+            self._process_question_by_type(question, idx)
+        finally:
+            self.pending_images = {}
+
+    def _process_question_by_type(self, question, idx=None):
         normalized_type = self.normalize_question_type(question)
         if normalized_type in FILL_GAPS_TYPES:
             # Gap detection works on plain text, so never send code formatting for fill-gaps.
@@ -926,6 +971,13 @@ class ExamNetAutomator:
         return best
 
     def run(self):
+        self.open_input()
+        try:
+            self._run()
+        finally:
+            self.close_input()
+
+    def _run(self):
         should_continue = run_json_precheck(
             self.json_file,
             interactive=self.interactive,

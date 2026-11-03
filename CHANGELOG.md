@@ -6,6 +6,15 @@ Version numbers are MAJOR.MINOR.PATCH:
 * **MINOR** (1.1.0): new features such as a new question type. Existing question files still work.
 * **MAJOR** (2.0.0): existing question files (JSON) would need changing.
 
+## Unreleased
+
+* Images in questions. Put `[[image:name]]` in the question text where an image belongs, between
+  paragraphs or after the text, and list the image file in the question's `images`. ExamLoader uploads
+  each image into Exam.net in that spot, with an optional width and description.
+* Exam packages: load a `.zip` containing `questions.json` and an `images/` folder.
+* **Copy AI instructions** button (replaces Copy JSON schema): instructions to paste into a Claude
+  Project so it returns an exam package ExamLoader can load, images included.
+
 ## 1.1.0 (2026-11-03)
 
 * Mac app: download `ExamLoader-examdotnet-mac-1.1.0.dmg` and drag ExamLoader into Applications

@@ -39,7 +39,7 @@ if ($LASTEXITCODE -ne 0) { throw "Failed to install build dependencies." }
 
 if (-not $SkipTests) {
     Write-Host "Running unit tests ..."
-    & $VenvPython -m unittest test_cli test_automator test_browser test_updates
+    & $VenvPython -m unittest test_cli test_automator test_browser test_updates test_images
     if ($LASTEXITCODE -ne 0) { throw "Unit tests failed; build stopped." }
 }
 

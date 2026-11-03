@@ -9,6 +9,7 @@ import time
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 
 from .browser import launch_browser
+from .images import insert_question_images
 from .paths import diagnostics_dir
 from .question_html import fill_question_html, has_code_marks, strip_markdown_code_marks
 
@@ -44,6 +45,8 @@ class LongAnswerProbe:
         self.rubric_is_html = rubric_is_html
         self.list_match_pairs = list_match_pairs or []
         self.points = points
+        # {name: {"path", "alt", "width"}} for [[image:name]] markers; set by the automator per question.
+        self.pending_images = {}
         self.playwright = None
         self.browser = None
         self.context = None
@@ -665,6 +668,10 @@ class LongAnswerProbe:
         return False
 
     def fill_question_prompt(self, question_text):
+        self._fill_question_prompt_text(question_text)
+        insert_question_images(self.page, self.pending_images, self.logger)
+
+    def _fill_question_prompt_text(self, question_text):
         if not self.wait_for_free_text_editor_ready(timeout=5000):
             self.capture_diagnostics("free_text_not_ready_before_fill")
             raise RuntimeError(

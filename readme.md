@@ -35,8 +35,10 @@ You need **Google Chrome** or **Microsoft Edge** in your Applications folder.
 
 1. Start **ExamLoader for Exam.net**. A browser window opens on Exam.net: log in and open the exam you want to add
    questions to. (This is a separate browser window from your usual one, so you only need to log in the first time.)
-2. In ExamLoader, choose your questions file (**Browse...**) or copy the JSON from ChatGPT and click
-   **Paste from clipboard**. Click **Copy JSON schema** to get an example to give ChatGPT.
+2. In ExamLoader, choose your questions file (**Browse...**: a `.json` file, or a `.zip` exam package with
+   images) or copy the JSON from your AI chat and click **Paste from clipboard**. Click **Copy AI instructions**
+   and paste them into a Claude Project's instructions (or the start of a chat): the AI then knows exactly what
+   to hand back, including images. See [Images](#images).
 3. Click **Validate** to check the questions, then **Start**. Watch the log; click
    **Stop after current question** if you need to stop.
 
@@ -149,7 +151,9 @@ python -m examnet [--json-file PATH] [--browser-url URL] [--non-interactive] [--
 
 * `--json-file PATH`: Path to the questions JSON file (default: `questions.json`).
 * `--browser-url URL`: Chrome CDP URL (default: `http://127.0.0.1:9222`).
+* `--json-file` also accepts a `.zip` exam package (see [Images](#images)).
 * `--print-schema`: Print a valid JSON array example for supported question types, copy it to the clipboard when possible, and exit.
+* `--print-ai-instructions`: Print the instructions for an AI (the GUI's **Copy AI instructions**), copy them to the clipboard when possible, and exit.
 * `--non-interactive`: Disables prompts. The run fails fast if login/setup is still required.
 * `--log-level LEVEL`: One of `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`).
 
@@ -181,7 +185,8 @@ python -c "from examnet import ExamNetAutomator; a=ExamNetAutomator(json_file='q
 
 ## JSON File Format
 
-The JSON should be an array of question objects (or an object containing a `questions` array).
+The JSON should be an array of question objects, or an object containing a `questions` array. The AI
+instructions ask for `{"format": "examloader/1", "questions": [...]}`; a different `format` only logs a warning.
 
 Supported question types:
 
@@ -295,6 +300,42 @@ print(total / 5)"
 ]
 ```
 
+### Images
+
+Any question type can have images in its question text (not in options, pairs, gaps or answers). Put a
+marker on its own line where each image goes and list the files in `images`:
+
+```json
+{
+  "question_type": "multiple_choice",
+  "question": "Look at the spreadsheet below.
+[[image:canteen]]
+Which formula belongs in cell D4?",
+  "images": {
+    "canteen": { "file": "images/canteen.png", "alt": "Spreadsheet of canteen prices", "width": 500 }
+  },
+  "options": ["=B4*C4*B1", "=B4+C4"],
+  "answer": "=B4*C4*B1"
+}
+```
+
+* `file` (required): path relative to `questions.json`, inside its folder (e.g. `images/canteen.png`).
+  Types: png, jpg/jpeg, gif, webp, svg; up to 10 MB each.
+* `alt` (optional): description saved on the image for screen readers.
+* `width` (optional): display width in pixels, 50-1200. Exam.net's default is 300.
+* Names use lowercase letters, numbers, `-` and `_`. Every marker needs an entry, every entry needs a
+  marker, and each marker is used once. Validation checks all of this, and that every file exists, before
+  the browser is touched.
+
+Images are uploaded through the question editor's own **Insert Image** button after the text is filled in,
+so Exam.net stores them exactly as if the teacher had uploaded them (`examnet/images.py`).
+
+An **exam package** is a `.zip` with `questions.json` at the top (or inside one folder) and the images
+beside it, usually in `images/`. ExamLoader unpacks it to a temporary folder for the run and deletes it
+afterwards. A plain `questions.json` with an `images/` folder next to it works the same way. Note that
+`failed_questions.json` from a package run refers to images that are no longer there: re-run failed
+questions from the original package with `--start-index` instead.
+
 ## Troubleshooting
 
 * **Port Conflicts**: Ensure no other Chrome or Edge instance uses `--remote-debugging-port=9222`.
@@ -323,7 +364,7 @@ To add a new `question_type`:
 ## Tests
 
 ```bash
-python -m unittest test_cli test_automator test_browser test_updates
+python -m unittest test_cli test_automator test_browser test_updates test_images
 ```
 
 ## Building the Windows app

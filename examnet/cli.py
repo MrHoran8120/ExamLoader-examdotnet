@@ -14,12 +14,21 @@ from .paths import logs_dir
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Automate exam.net question creation for multiple question types from JSON.")
-    parser.add_argument("--json-file", default="questions.json", help="Path to questions JSON file.")
+    parser.add_argument(
+        "--json-file",
+        default="questions.json",
+        help="Path to the questions JSON file, or a .zip exam package (questions.json plus an images/ folder).",
+    )
     parser.add_argument("--browser-url", default="http://127.0.0.1:9222", help="Chrome CDP URL.")
     parser.add_argument(
         "--print-schema",
         action="store_true",
         help="Print an example JSON schema/payload for supported question types and exit.",
+    )
+    parser.add_argument(
+        "--print-ai-instructions",
+        action="store_true",
+        help="Print instructions to give an AI (e.g. a Claude Project) so it returns a loadable exam, and exit.",
     )
     parser.add_argument(
         "--non-interactive",
@@ -313,6 +322,15 @@ def main():
             print("Schema copied to clipboard.", file=sys.stderr)
         else:
             print("Schema printed, but clipboard copy was unavailable.", file=sys.stderr)
+        return
+
+    if args.print_ai_instructions:
+        from .ai_instructions import build_ai_instructions
+
+        instructions = build_ai_instructions()
+        print(instructions)
+        if copy_to_clipboard(instructions):
+            print("AI instructions copied to clipboard.", file=sys.stderr)
         return
 
     from .automator import ExamNetAutomator

@@ -13,7 +13,8 @@ from tkinter.scrolledtext import ScrolledText
 
 from . import APP_NAME, DOWNLOAD_URL, LAST_VERIFIED, __version__
 from .browser import EXAM_NET_URL, BrowserNotFoundError, is_cdp_available, launch_browser
-from .cli import build_question_schema_text, configure_logging
+from .ai_instructions import build_ai_instructions
+from .cli import configure_logging
 from .paths import data_file, documents_dir, logs_dir
 from .updates import check_for_update
 from .json_precheck import _extract_json_payload, _strip_jsonc_comments, run_json_precheck
@@ -84,7 +85,7 @@ class ExamNetGui:
         self.debug_preview = tk.BooleanVar(value=False)
         self.debug_preview_ms = tk.IntVar(value=5000)
         self.debug_confirm = tk.BooleanVar(value=False)
-        self.status = tk.StringVar(value="Choose a questions JSON file, then click Start.")
+        self.status = tk.StringVar(value="Choose a questions file (.json or .zip), then click Start.")
         self.log_file_path = None
 
         self._build()
@@ -116,7 +117,9 @@ class ExamNetGui:
             row=0, column=2, padx=2
         )
         ttk.Button(file_frame, text="Validate", command=self._validate).grid(row=0, column=3, padx=2)
-        ttk.Button(file_frame, text="Copy JSON schema", command=self._copy_schema).grid(row=0, column=4, padx=2)
+        ttk.Button(file_frame, text="Copy AI instructions", command=self._copy_ai_instructions).grid(
+            row=0, column=4, padx=2
+        )
 
         # Options
         opt_frame = ttk.LabelFrame(main, text="Options", padding=8)
@@ -198,7 +201,7 @@ class ExamNetGui:
     def _resolved_json_path(self):
         path = self.json_path.get().strip().strip('"')
         if not path:
-            messagebox.showwarning("No file", "Choose a questions JSON file first.")
+            messagebox.showwarning("No file", "Choose a questions file (.json or .zip) first.")
             return None
         if not os.path.exists(path):
             messagebox.showerror("File not found", f"Could not find:\n{path}")
@@ -214,9 +217,9 @@ class ExamNetGui:
     def _browse(self):
         initial = os.path.dirname(self.json_path.get()) or documents_dir()
         path = filedialog.askopenfilename(
-            title="Choose questions JSON file",
+            title="Choose questions file",
             initialdir=initial,
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            filetypes=[("Questions files", "*.json *.zip"), ("All files", "*.*")],
         )
         if path:
             self.json_path.set(os.path.normpath(path))
@@ -255,23 +258,29 @@ class ExamNetGui:
         log = logging.getLogger("examnet.gui")
         automator = ExamNetAutomator(json_file=path, logger=log)
         try:
-            run_json_precheck(path, interactive=False, logger=log)
+            automator.open_input()
+            run_json_precheck(automator.json_file, interactive=False, logger=log)
             questions = automator.load_questions()
             automator.validate_questions(questions)
         except Exception as e:
             self.status.set("Validation failed.")
             messagebox.showerror("Validation failed", str(e))
             return
+        finally:
+            automator.close_input()
 
         counts = Counter(automator.normalize_question_type(q) for q in questions)
         summary = "\n".join(f"  {qtype}: {n}" for qtype, n in sorted(counts.items()))
+        image_count = sum(len(q.get("images") or {}) for q in questions)
+        if image_count:
+            summary += f"\n\n  images: {image_count}"
         self.status.set(f"Validation passed: {len(questions)} question(s).")
         messagebox.showinfo("Validation passed", f"{len(questions)} question(s) are valid:\n\n{summary}")
 
-    def _copy_schema(self):
+    def _copy_ai_instructions(self):
         self.root.clipboard_clear()
-        self.root.clipboard_append(build_question_schema_text())
-        self.status.set("Example JSON schema copied to clipboard.")
+        self.root.clipboard_append(build_ai_instructions())
+        self.status.set("AI instructions copied. Paste them into your Claude Project's instructions.")
 
     def _open_chrome(self):
         browser_url = self.browser_url.get().strip()
