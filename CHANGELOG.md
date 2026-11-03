@@ -6,7 +6,7 @@ Version numbers are MAJOR.MINOR.PATCH:
 * **MINOR** (1.1.0): new features such as a new question type. Existing question files still work.
 * **MAJOR** (2.0.0): existing question files (JSON) would need changing.
 
-## Unreleased
+## 1.2.0 (2026-11-03)
 
 * Images in questions. Put `[[image:name]]` in the question text where an image belongs, between
   paragraphs or after the text, and list the image file in the question's `images`. ExamLoader uploads
