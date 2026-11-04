@@ -6,6 +6,12 @@ Version numbers are MAJOR.MINOR.PATCH:
 * **MINOR** (1.1.0): new features such as a new question type. Existing question files still work.
 * **MAJOR** (2.0.0): existing question files (JSON) would need changing.
 
+## 1.2.1 (2026-11-04)
+
+* List match questions are always worth 1 mark per correct match. Exam.net scores each pair separately,
+  so a `mark.points` of 4 used to give 4 marks for every pair. `mark.points` is now ignored for list match.
+* The AI instructions no longer give list match questions a mark.
+
 ## 1.2.0 (2026-11-03)
 
 * Images in questions. Put `[[image:name]]` in the question text where an image belongs, between

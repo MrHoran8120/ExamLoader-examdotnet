@@ -197,7 +197,7 @@ Supported question types:
 * `list_match`:
   * `question_text` (string)
   * `pairs` (array of `{ "left": "...", "right": "..." }`)
-  * optional `mark.points`
+  * always 1 mark per correct match (exam.net scores each pair separately), so `mark.points` is ignored
 * `fill_gaps`:
   * `question_text` (string)
   * `gaps` (array of strings or objects with `answer` / `answers`)

@@ -13,6 +13,8 @@ from .images import insert_question_images
 from .paths import diagnostics_dir
 from .question_html import fill_question_html, has_code_marks, strip_markdown_code_marks
 
+LIST_MATCH_POINTS_PER_MATCH = 1
+
 
 class LongAnswerProbe:
     def __init__(
@@ -1658,8 +1660,15 @@ class LongAnswerProbe:
             self.click_list_match()
             self.fill_question_prompt(self.question_text)
             self.fill_list_match_pairs(list_match_pairs)
-            if self.points is not None:
-                self.set_question_points(self.points)
+            # Exam.net awards list match points per correct pair, so mark.points would be multiplied
+            # by the number of pairs. Always give 1 mark per match.
+            if self.points is not None and str(self.points).strip() != str(LIST_MATCH_POINTS_PER_MATCH):
+                self.logger.info(
+                    "List match: ignoring mark.points=%s; Exam.net gives %s mark per correct match.",
+                    self.points,
+                    LIST_MATCH_POINTS_PER_MATCH,
+                )
+            self.set_question_points(LIST_MATCH_POINTS_PER_MATCH)
             self.click_save_and_close_question()
             return
         raise RuntimeError(f"Unsupported question_type '{question_type}'. Supported: long_answer, list_match.")

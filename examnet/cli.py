@@ -148,9 +148,6 @@ def build_question_schema():
                     "right": "<Right item 2>",
                 },
             ],
-            "mark": {
-                "points": 2,
-            },
         },
         {
             "question_id": "FG-001",

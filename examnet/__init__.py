@@ -1,6 +1,6 @@
 # Release details. Bump __version__ for every release (see "Releasing" in readme.md) and
 # update LAST_VERIFIED whenever a full live run against Exam.net has passed.
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 LAST_VERIFIED = "2026-11-03"
 APP_NAME = "ExamLoader for Exam.net"
 PROJECT_URL = "https://github.com/MrHoran8120/ExamLoader-examdotnet"

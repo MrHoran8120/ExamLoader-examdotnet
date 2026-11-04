@@ -67,7 +67,7 @@ Every question has `question_id` (your label, e.g. "MC-001") and `question_type`
   option) or `answers` (several correct options, for "select all that apply"). Every answer must be
   copied exactly from `options`.
 - `list_match`: `question_text` and `pairs`, an array of {{"left": ..., "right": ...}} items that
-  students match up.
+  students match up. Each correct match is worth 1 mark, so leave out `mark`.
 - `fill_gaps`: `question_text` with `___` (three underscores) where each gap goes, and `gaps`, one
   entry per `___` in the same order: {{"answer": "word"}}, or {{"answers": ["word", "alternative"]}}
   when more than one answer is accepted. Optional `word_bank_extras` (wrong words to add to a
@@ -78,7 +78,7 @@ Every question has `question_id` (your label, e.g. "MC-001") and `question_type`
 - `python_program`: like `long_answer`, for questions students answer by writing Python in
   Exam.net's programming tool. No `suggested_word_count`.
 
-Every question may have `"mark": {{"points": N}}`.
+Every question except `list_match` may have `"mark": {{"points": N}}`.
 
 Text rules:
 - Put line breaks in text as `\\n`. Use plain text, not HTML or Markdown headings.
